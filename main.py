@@ -1,3 +1,5 @@
+from logging import shutdown
+
 import uvicorn
 from fastapi import FastAPI
 from dependencies.database import db
