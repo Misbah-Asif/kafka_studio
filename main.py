@@ -4,13 +4,24 @@ import uvicorn
 from fastapi import FastAPI
 from dependencies.database import db
 from api.v1.endpoints.consumer_msg_dump import router as consumer_msg_router
+import logging
+from contextlib import asynccontextmanager
+from utils.producer import kps
+
+
+@asynccontextmanager
+async def lifespan(app):
+    await kps.start()
+    try:
+        yield
+    finally:
+        await kps.stop()
 
 app = FastAPI(
 title="Kafka Studio API",
     version="1.0.0",
+    lifespan=lifespan,
 )
-
-import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,6 +44,7 @@ async def db_health():
     w_ping_status = await db.health_check(db_type="write")
     return {"r_db_status": r_ping_status, "w_db_status": w_ping_status}
 
+
 app.include_router(
     consumer_msg_router,
     prefix="/api/v1",
@@ -41,3 +53,4 @@ app.include_router(
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
